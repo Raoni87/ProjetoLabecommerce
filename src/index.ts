@@ -606,73 +606,90 @@ app.get('/purchase/:id', async (req: Request, res: Response) => {
 })
 
 app.post('/purchase', async (req: Request, res: Response) => {
-    try{
+    try {
+        const id = req.body.id as string;
+        const buyer_id = req.body.buyer_id as string;
+        const total_price = req.body.total_price as number;
+        const paid = req.body.paid as number;
+        const created_at = req.body.create_at as string;
     
-    const userId: string = req.body.userId as string;
-    const productId: string = req.body.productId as string;
-    const quantity: number = req.body.quantity as number;
-    const totalPrice: number = req.body.totalPrice as number;
-
-    if (userId !== undefined) {
-        if (typeof userId !== 'string') {
+        if (id !== undefined) {
+          if (typeof id !== "string") {
             res.status(400);
-            throw new Error('userId deve ser uma string');
-        }
-
-        if (userId.length < 3) {
+            throw new Error("'id' deve ser string");
+          }
+    
+          if (id.length < 4) {
             res.status(400);
-            throw new Error('userId deve ter pelo menos 3 caracteres');
+            throw new Error("'id' deve possuir pelo menos 4 caracteres");
+          }
         }
-
-        if (typeof quantity !== 'number') {
+    
+        if (buyer_id !== undefined) {
+          if (typeof buyer_id !== "string") {
             res.status(400);
-            throw new Error('Quantity deve ser um number');
+            throw new Error("'buyer_id' deve ser string");
+          }
         }
-
-        if (quantity < 1) {
+    
+        if (total_price !== undefined) {
+          if (typeof total_price !== "number") {
             res.status(400);
-            throw new Error('Quantidade deve ser igual ou maior a 1');
+            throw new Error("'total_price' deve ser number");
+          }
         }
-    }
-
-    const newPurchase: Purchase = {
-        userId, productId, quantity, totalPrice
-    };
-
-    await db('purchase').insert(newPurchase);
-
-    const [insertPurchase]: Purchase[] = await db('purchase').where({userId});
-
-    res.status(201).send({
-        message: "Purchase criada com sucesso",
-        purchase: insertPurchase,
+    
+        if (paid !== undefined) {
+          if (typeof paid !== "number") {
+            res.status(400);
+            throw new Error("'paid' deve ser number");
+          }
+        }
+    
+        if (created_at !== undefined) {
+          if (typeof created_at !== "string") {
+            res.status(400);
+            throw new Error("'created_at' deve ser string ");
+          }
+        }
+    
+        const [purchaseExist]: Purchase[] | undefined[] = await db(
+          "purchase"
+        ).where({ id });
+    
+        if (purchaseExist) {
+          res.status(400);
+          throw new Error("'id' já existe");
+        }
+    
+        const newPurchase = {
+          id,
+          total_price,
+          paid,
+          buyer_id,
+        };
+    
+        await db("purchase").insert(newPurchase);
+    
+        const [insertPurchase]: Purchase[] = await db("purchase").where({ id });
+    
+        res.status(201).send({
+          message: "purchase criada com sucesso",
+          purchase: insertPurchase,
+        });
+      } catch (err) {
+        console.log(err);
+        if (res.statusCode === 200) {
+          res.status(500);
+        }
+    
+        if (err instanceof Error) {
+          res.send(err.message);
+        } else {
+          res.send("Verificar erro");
+        }
+      }
     });
-
-    const [duplicatedPurchase]: Purchase[] | undefined[] = await db('purchase').where({userId});
-    
-    if(duplicatedPurchase) {
-        res.status(400);
-        throw new Error('Id de compra já existe');
-    }
-
-    // purchase.push(newPurchase)
-    // console.log("Compra", purchase)
-
-    // res.status(201).send('Compra realizada com sucesso.')
-} catch(error) {
-    console.log(error);
-    if( res.statusCode === 200) {
-        res.status(500);
-    } 
-    
-    if (error instanceof Error) {
-        res.send(error.message);
-    } else {
-        res.send('Verificar erro');
-    }
-}
-}
-);
 
 
 
